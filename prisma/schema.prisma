@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Artist {
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(255)
+  description String
+  image String
+  genre String
+  albums AlbumsOnArtists[]
+  songs SongsOnArtists[]
+}
+
+model Album {
+  id Int @id @default(autoincrement())
+  title String @db.VarChar(255)
+  type String @db.VarChar(128)
+  cover String
+  date Int
+  artists AlbumsOnArtists[]
+  songs Song[]
+}
+
+model Song {
+  id Int @id @default(autoincrement())
+  title String @db.VarChar(255)
+  image String
+  source String
+  duration Int
+  artists SongsOnArtists[]
+  album Album @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  albumId Int
+}
+
+model AlbumsOnArtists {
+  artist Artist @relation(fields: [artistId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  artistId Int
+  album Album @relation(fields: [albumId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  albumId Int
+
+  @@id([artistId, albumId])
+}
+
+model SongsOnArtists {
+  artist Artist @relation(fields: [artistId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  artistId Int
+  song Song @relation(fields: [songId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  songId Int
+
+  @@id([artistId, songId])
+}
