@@ -13,7 +13,7 @@ datasource db {
 model Artist {
   id Int @id @default(autoincrement())
   name String @db.VarChar(255)
-  description String
+  description String @db.Text
   image String
   genre String
   albums AlbumsOnArtists[]
