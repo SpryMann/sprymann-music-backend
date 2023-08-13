@@ -10,43 +10,23 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  ApiCreatedResponse,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiTags,
-  getSchemaPath,
-} from '@nestjs/swagger';
+import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from 'src/common/decorators/apiPaginatedResponse';
 import { PaginatedDto } from 'src/common/dtos/paginated.dto';
 import { ArtistsService } from './artists.service';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { FindAllArtistsDto } from './dto/find-all-artists.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
 import { ArtistEntity } from './entities/artist.entity';
+import { FindOneArtistEntity } from './entities/find-one-artist.entity';
 
 @ApiTags('Artists')
-@ApiExtraModels(PaginatedDto)
 @Controller('artists')
 export class ArtistsController {
   constructor(private artistsService: ArtistsService) {}
 
   @Get()
-  @ApiOkResponse({
-    description: 'Success: returns an array of artists',
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(PaginatedDto) },
-        {
-          properties: {
-            results: {
-              type: 'array',
-              items: { $ref: getSchemaPath(ArtistEntity) },
-            },
-          },
-        },
-      ],
-    },
-  })
+  @ApiPaginatedResponse(ArtistEntity)
   async findAll(
     @Query() query: FindAllArtistsDto,
   ): Promise<PaginatedDto<ArtistEntity>> {
@@ -58,7 +38,7 @@ export class ArtistsController {
   @Get(':id')
   @ApiOkResponse({
     description: 'Success: returns an artist object',
-    type: ArtistEntity,
+    type: FindOneArtistEntity,
   })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const artist = await this.artistsService.findOne(id);

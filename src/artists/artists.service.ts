@@ -3,6 +3,7 @@ import { Artist } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
+import { FindOneArtistEntity } from './entities/find-one-artist.entity';
 
 @Injectable()
 export class ArtistsService {
@@ -34,8 +35,28 @@ export class ArtistsService {
     };
   }
 
-  findOne(id: number): Promise<Artist | null> {
-    return this.prismaService.artist.findUnique({ where: { id } });
+  async findOne(id: number): Promise<FindOneArtistEntity | null> {
+    const artist = await this.prismaService.artist.findUnique({
+      where: { id },
+      include: {
+        albums: {
+          select: {
+            album: true,
+          },
+        },
+      },
+    });
+
+    if (!artist) {
+      return null;
+    }
+
+    const albums = artist.albums.map((album) => ({ ...album.album }));
+
+    return {
+      ...artist,
+      albums,
+    };
   }
 
   create(createArtistDto: CreateArtistDto) {
