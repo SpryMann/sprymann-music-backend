@@ -1,15 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Album } from '@prisma/client';
+import { Album, Song } from '@prisma/client';
+import { SongEntity } from 'src/songs/entities/song.entity';
 import { ArtistWithIdAndName } from './find-all-albums.entity';
 
-type AlbumWithArtists = Album & {
-  artists: {
-    id: number;
-    name: string;
-  }[];
+type AlbumWithArtistsAndSongs = Album & {
+  artists: ArtistWithIdAndName[];
+  songs: Song[];
 };
 
-export class FindOneAlbumEntity implements AlbumWithArtists {
+export class FindOneAlbumEntity implements AlbumWithArtistsAndSongs {
   @ApiProperty()
   id: number;
 
@@ -30,4 +29,17 @@ export class FindOneAlbumEntity implements AlbumWithArtists {
     type: ArtistWithIdAndName,
   })
   artists: ArtistWithIdAndName[];
+
+  @ApiProperty({
+    isArray: true,
+    type: SongEntity,
+  })
+  songs: {
+    id: number;
+    title: string;
+    image: string;
+    source: string;
+    duration: number;
+    albumId: number;
+  }[];
 }

@@ -12,10 +12,7 @@ export class ArtistWithIdAndName
 }
 
 type AlbumWithArtists = Album & {
-  artists: {
-    id: number;
-    name: string;
-  }[];
+  artists: ArtistWithIdAndName[];
 };
 
 export class FindAllAlbumsEntity implements AlbumWithArtists {

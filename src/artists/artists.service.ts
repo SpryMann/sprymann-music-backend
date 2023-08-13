@@ -44,6 +44,11 @@ export class ArtistsService {
             album: true,
           },
         },
+        songs: {
+          select: {
+            song: true,
+          },
+        },
       },
     });
 
@@ -51,11 +56,13 @@ export class ArtistsService {
       return null;
     }
 
-    const albums = artist.albums.map((album) => ({ ...album.album }));
+    const albums = artist.albums.map(({ album }) => ({ ...album }));
+    const songs = artist.songs.map(({ song }) => ({ ...song }));
 
     return {
       ...artist,
       albums,
+      songs,
     };
   }
 

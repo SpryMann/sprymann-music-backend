@@ -1,21 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { Album } from '@prisma/client';
+import { Song } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateAlbumDto } from './dto/create-album.dto';
-import { UpdateAlbumDto } from './dto/update-album.dto';
-import { FindAllAlbumsEntity } from './entities/find-all-albums.entity';
-import { FindOneAlbumEntity } from './entities/find-one-album.entity';
+import { CreateSongDto } from './dto/create-song.dto';
+import { UpdateSongDto } from './dto/update-song.dto';
+import { FindAllSongsEntity } from './entities/find-all-songs.entity';
 
 @Injectable()
-export class AlbumsService {
+export class SongsService {
   constructor(private prismaService: PrismaService) {}
 
   async findAll({
     artistId,
+    albumId,
     page = 1,
     limit = 12,
   }: {
     artistId?: number;
+    albumId?: number;
     page?: number;
     limit?: number;
   }): Promise<{
@@ -23,11 +24,12 @@ export class AlbumsService {
     page: number;
     limit: number;
     totalPages: number;
-    results: FindAllAlbumsEntity[];
+    results: FindAllSongsEntity[];
   }> {
     const [total, items] = await this.prismaService.$transaction([
-      this.prismaService.album.count({
+      this.prismaService.song.count({
         where: {
+          albumId,
           artists: {
             some: {
               artistId,
@@ -35,16 +37,17 @@ export class AlbumsService {
           },
         },
       }),
-      this.prismaService.album.findMany({
+      this.prismaService.song.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
         where: {
+          albumId,
           artists: {
             some: {
               artistId,
             },
           },
         },
-        skip: (page - 1) * limit,
-        take: limit,
         include: {
           artists: {
             select: {
@@ -56,10 +59,16 @@ export class AlbumsService {
               },
             },
           },
+          album: {
+            select: {
+              id: true,
+              title: true,
+              date: true,
+            },
+          },
         },
       }),
     ]);
-
     const results = items.map((item) => {
       const artists = item.artists.map((artist) => ({ ...artist.artist }));
 
@@ -79,10 +88,11 @@ export class AlbumsService {
     };
   }
 
-  async findOne(id: number): Promise<FindOneAlbumEntity | null> {
-    const album = await this.prismaService.album.findUnique({
+  async findOne(id: number): Promise<FindAllSongsEntity | null> {
+    const song = await this.prismaService.song.findUnique({
       where: { id },
       include: {
+        album: true,
         artists: {
           select: {
             artist: {
@@ -93,57 +103,61 @@ export class AlbumsService {
             },
           },
         },
-        songs: true,
       },
     });
 
-    if (!album) {
+    if (!song) {
       return null;
     }
 
-    const artists = album.artists.map((artist) => ({ ...artist.artist }));
+    const artists = song.artists.map(({ artist }) => ({ ...artist }));
 
     return {
-      ...album,
+      ...song,
       artists,
     };
   }
 
-  create(createAlbumDto: CreateAlbumDto): Promise<Album> {
-    const { title, type, cover, date, artists } = createAlbumDto;
-    const connectArtists = artists.map((artist) => ({
-      artist: {
-        connect: {
-          id: artist,
+  create(createSongDto: CreateSongDto): Promise<Song> {
+    const { title, image, source, duration, artists, albumId } = createSongDto;
+    const connectArtists = artists.map((artist) => {
+      return {
+        artist: {
+          connect: {
+            id: artist,
+          },
         },
-      },
-    }));
+      };
+    });
 
-    return this.prismaService.album.create({
+    return this.prismaService.song.create({
       data: {
         artists: {
           create: connectArtists,
         },
         title,
-        type,
-        cover,
-        date,
+        image,
+        source,
+        duration,
+        albumId,
       },
     });
   }
 
-  update(id: number, updateAlbumDto: UpdateAlbumDto) {
-    const { title, type, cover, date, artists } = updateAlbumDto;
-    const data = { title, type, cover, date };
-    const connectArtists = artists.map((artist) => ({
-      artist: {
-        connect: {
-          id: artist,
+  update(id: number, updateSongDto: UpdateSongDto): Promise<Song> {
+    const { title, image, source, duration, albumId, artists } = updateSongDto;
+    const data = { title, image, source, duration, albumId };
+    const connectArtists = artists.map((artist) => {
+      return {
+        artist: {
+          connect: {
+            id: artist,
+          },
         },
-      },
-    }));
+      };
+    });
 
-    return this.prismaService.album.update({
+    return this.prismaService.song.update({
       where: { id },
       data: {
         ...data,
@@ -155,8 +169,8 @@ export class AlbumsService {
     });
   }
 
-  remove(id: number) {
-    return this.prismaService.album.delete({
+  remove(id: number): Promise<Song> {
+    return this.prismaService.song.delete({
       where: { id },
     });
   }
